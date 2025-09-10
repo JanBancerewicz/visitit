@@ -5,93 +5,126 @@ import com.example.visitit.se.model.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Generuje przykładowe dane i wiąże relacje dwukierunkowe.
- */
+
 public class DataGenerator {
     private static final AtomicLong ID_GEN = new AtomicLong(1);
+
+    private static final List<String> FIRST_NAMES = List.of(
+            "John", "Martin", "Sam", "Michał", "Kacper", "Adam", "Jessica", "Paulina", "Justyna", "Zofia"
+    );
+    private static final List<String> LAST_NAMES = List.of(
+            "Wójcik", "Nowak", "Bancerewicz", "Lewandowski", "Doe", "Smith", "Jones", "Miller", "Brown", "Walker"
+    );
+    private static final List<String> ROLES = List.of(
+            "Specjalista", "Terapeuta", "Masażysta", "Psycholog", "Dietetyk", "Trener", "Lekarz", "Recepcjonista", "Asystent", "Konsultant"
+    );
+    private static final List<String> DESCRIPTIONS = List.of(
+            "Doświadczony specjalista", "Fachowiec w swojej dziedzinie", "Empatyczny i profesjonalny", "Młody i ambitny",
+            "Zawsze punktualny", "Komunikatywny", "Ceniony przez klientów", "Skuteczny i cierpliwy", "Kreatywny terapeuta", "Lubi swoją pracę"
+    );
+    private static final List<String> SERVICE_NAMES = List.of(
+            "Konsultacja", "Terapia", "Masaż", "Badanie", "Diagnostyka", "Kontrola", "Warsztat", "Porada", "Rehabilitacja", "Coaching"
+    );
+    private static final List<BigDecimal> SERVICE_PRICES = List.of(
+            new BigDecimal("50.00"), new BigDecimal("80.00"), new BigDecimal("100.00"),
+            new BigDecimal("120.00"), new BigDecimal("150.00"), new BigDecimal("200.00"),
+            new BigDecimal("75.00"), new BigDecimal("95.00"), new BigDecimal("130.00"), new BigDecimal("300.00")
+    );
+    private static final List<String> ROOM_NAMES = List.of(
+            "Gabinet A", "Gabinet B", "Gabinet C", "Sala 1", "Sala 2", "Pokój relaksacyjny", "Laboratorium", "Studio", "Pokój konsultacyjny", "Gabinet VIP"
+    );
+    private static final List<String> STATUSES = List.of(
+            "CONFIRMED", "PENDING", "CANCELLED", "RESCHEDULED", "COMPLETED"
+    );
+
+    private static final Random RANDOM = new Random();
 
     public static Long nextId() {
         return ID_GEN.getAndIncrement();
     }
 
-    public static List<Employee> sampleEmployeesWithReservations() {
-        List<Client> clients = new ArrayList<>();
-        clients.add(Client.builder().id(nextId()).firstName("Anna").lastName("Kowalska").email("anna@example.com").phone("600111222").registrationDate(LocalDateTime.now().minusDays(30)).build());
-        clients.add(Client.builder().id(nextId()).firstName("Piotr").lastName("Nowak").email("piotr@example.com").phone("600333444").registrationDate(LocalDateTime.now().minusDays(10)).build());
-        clients.add(Client.builder().id(nextId()).firstName("Ewa").lastName("Zielinska").email("ewa@example.com").phone("600555666").registrationDate(LocalDateTime.now().minusDays(5)).build());
+    private static String randomElement(List<String> list) {
+        return list.get(RANDOM.nextInt(list.size()));
+    }
 
-        List<Service> services = new ArrayList<>();
-        services.add(Service.builder().id(nextId()).name("Konsultacja").description("Konsultacja diagnostyczna").durationMin(30).price(new BigDecimal("50.00")).build());
-        services.add(Service.builder().id(nextId()).name("Terapia").description("Sesja terapeutyczna").durationMin(60).price(new BigDecimal("120.00")).build());
-        services.add(Service.builder().id(nextId()).name("Masaż").description("Relaksacyjny masaż").durationMin(45).price(new BigDecimal("80.00")).build());
+    private static BigDecimal randomPrice() {
+        return SERVICE_PRICES.get(RANDOM.nextInt(SERVICE_PRICES.size()));
+    }
 
-        List<Room> rooms = new ArrayList<>();
-        rooms.add(Room.builder().id(nextId()).name("Gabinet A").build());
-        rooms.add(Room.builder().id(nextId()).name("Gabinet B").build());
-
+    public static List<Employee> sampleEmployeesWithReservations(int clientCount, int serviceCount, int employeeCount, int reservationCount) {
         List<Employee> employees = new ArrayList<>();
-        Employee e1 = Employee.builder().id(nextId()).firstName("Marta").lastName("Sikora").role("Specjalista").description("Specjalista od terapii").build();
-        Employee e2 = Employee.builder().id(nextId()).firstName("Jan").lastName("Lewandowski").role("Terapeuta").description("Doświadczony terapeuta").build();
-        Employee e3 = Employee.builder().id(nextId()).firstName("Kasia").lastName("Wójcik").role("Masażysta").description("Fachowiec od masaży").build();
+        List<Client> clients = new ArrayList<>();
+        List<Service> services = new ArrayList<>();
+        List<Room> rooms = new ArrayList<>();
 
-        // create reservations and link both ways
-        List<Reservation> res = new ArrayList<>();
-        res.add(Reservation.builder()
-                .id(nextId())
-                .client(clients.get(0))
-                .employee(e1)
-                .service(services.get(0))
-                .room(rooms.get(0))
-                .startDatetime(LocalDateTime.now().plusDays(1).withHour(10).withMinute(0))
-                .endDatetime(LocalDateTime.now().plusDays(1).withHour(10).withMinute(30))
-                .status("CONFIRMED")
-                .note("Pierwsza wizyta").build());
+        // Utwórz pulę klientów
+        for (int i = 0; i < clientCount; i++) {
+            clients.add(Client.builder()
+                    .id(nextId())
+                    .firstName(randomElement(FIRST_NAMES))
+                    .lastName(randomElement(LAST_NAMES))
+                    .email("client" + i + "@example.com")
+                    .phone("600" + (100000 + RANDOM.nextInt(899999)))
+                    .registrationDate(LocalDateTime.now().minusDays(RANDOM.nextInt(60)))
+                    .build());
+        }
 
-        res.add(Reservation.builder()
-                .id(nextId())
-                .client(clients.get(1))
-                .employee(e1)
-                .service(services.get(1))
-                .room(rooms.get(0))
-                .startDatetime(LocalDateTime.now().plusDays(2).withHour(12).withMinute(0))
-                .endDatetime(LocalDateTime.now().plusDays(2).withHour(13).withMinute(0))
-                .status("PENDING")
-                .note("Kontynuacja").build());
+        // Utwórz pulę usług
+        for (int i = 0; i < serviceCount; i++) {
+            services.add(Service.builder()
+                    .id(nextId())
+                    .name(randomElement(SERVICE_NAMES))
+                    .description("Opis: " + randomElement(DESCRIPTIONS))
+                    .durationMin(30 + RANDOM.nextInt(60))
+                    .price(randomPrice())
+                    .build());
+        }
 
-        res.add(Reservation.builder()
-                .id(nextId())
-                .client(clients.get(2))
-                .employee(e2)
-                .service(services.get(2))
-                .room(rooms.get(1))
-                .startDatetime(LocalDateTime.now().plusDays(3).withHour(9).withMinute(30))
-                .endDatetime(LocalDateTime.now().plusDays(3).withHour(10).withMinute(15))
-                .status("CONFIRMED")
-                .note(null).build());
+        // Utwórz pokoje (wszystkie z predefiniowanej listy)
+        for (String name : ROOM_NAMES) {
+            rooms.add(Room.builder().id(nextId()).name(name).build());
+        }
 
-        res.add(Reservation.builder()
-                .id(nextId())
-                .client(clients.get(0))
-                .employee(e3)
-                .service(services.get(2))
-                .room(rooms.get(1))
-                .startDatetime(LocalDateTime.now().plusDays(4).withHour(16).withMinute(0))
-                .endDatetime(LocalDateTime.now().plusDays(4).withHour(16).withMinute(45))
-                .status("CANCELLED")
-                .note("Klient odwołał").build());
+        // Utwórz pracowników
+        for (int i = 0; i < employeeCount; i++) {
+            Employee e = Employee.builder()
+                    .id(nextId())
+                    .firstName(randomElement(FIRST_NAMES))
+                    .lastName(randomElement(LAST_NAMES))
+                    .role(randomElement(ROLES))
+                    .description(randomElement(DESCRIPTIONS))
+                    .build();
+            employees.add(e);
+        }
 
-        // attach reservations to employees
-        e1.getReservations().add(res.get(0));
-        e1.getReservations().add(res.get(1));
-        e2.getReservations().add(res.get(2));
-        e3.getReservations().add(res.get(3));
+        // Utwórz rezerwacje
+        for (int i = 0; i < reservationCount; i++) {
+            Client c = clients.get(RANDOM.nextInt(clients.size()));
+            Employee e = employees.get(RANDOM.nextInt(employees.size()));
+            Service s = services.get(RANDOM.nextInt(services.size()));
+            Room r = rooms.get(RANDOM.nextInt(rooms.size()));
 
-        employees.add(e1);
-        employees.add(e2);
-        employees.add(e3);
+            LocalDateTime start = LocalDateTime.now().plusDays(RANDOM.nextInt(30)).withHour(8 + RANDOM.nextInt(10))
+                    .withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime end = start.plusMinutes(s.getDurationMin());
+
+            Reservation res = Reservation.builder()
+                    .id(nextId())
+                    .client(c)
+                    .employee(e)
+                    .service(s)
+                    .room(r)
+                    .startDatetime(start)
+                    .endDatetime(end)
+                    .status(randomElement(STATUSES))
+                    .note(RANDOM.nextBoolean() ? "Notatka: " + randomElement(DESCRIPTIONS) : null)
+                    .build();
+
+            e.getReservations().add(res);
+        }
 
         return employees;
     }

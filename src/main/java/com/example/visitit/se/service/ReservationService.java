@@ -62,7 +62,7 @@ public class ReservationService implements Serializable {
         storage.clear();
     }
 
-    // Serialization helpers for persistence of all reservations
+    // persistence
     public void saveToFile(File file) throws IOException {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(new ArrayList<>(storage.values()));

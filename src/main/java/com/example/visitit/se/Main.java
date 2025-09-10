@@ -11,22 +11,13 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Punkt wejścia aplikacji Java SE. Wykonuje zadania wymagane przez laboratorium:
- *  - tworzy dane
- *  - drukuje (nested forEach lambda)
- *  - tworzy Set wszystkich rezerwacji przez stream
- *  - filtruje/sortuje
- *  - mapuje do DTO i sortuje
- *  - serializuje/deserializuje
- *  - uruchamia równoległe pipeline z custom ForkJoinPool
- */
+
 public class Main {
     public static void main(String[] args) throws Exception {
-        // 1. Generowanie danych (categories = employees, elements = reservations)
-        List<Employee> employees = DataGenerator.sampleEmployeesWithReservations();
+        // 1. Data generating (categories = employees, elements = reservations)
+        List<Employee> employees = DataGenerator.sampleEmployeesWithReservations(5,5,3, 8);
 
-        System.out.println("=== 1) Employees and their reservations (original order) ===");
+        System.out.println("=== 2) Employees and their reservations (original order) ===");
         // 2. Nested forEach lambda printing categories and elements in original order
         employees.forEach(emp -> {
             System.out.println(emp);
@@ -40,11 +31,11 @@ public class Main {
         System.out.println("\n=== 3) All reservations as Set ===");
         allReservationsSet.forEach(System.out::println);
 
-        // 4. Filter elements (by status = CONFIRMED) and then sort (by endDatetime)
-        System.out.println("\n=== 4) Filtered (status=CONFIRMED) and sorted by endDatetime ===");
+        // 4. Filter elements (by status = CONFIRMED) and then sort (by startDatetime)
+        System.out.println("\n=== 4) Filtered (status=CONFIRMED) and sorted by startDatetime ===");
         allReservationsSet.stream()
                 .filter(r -> "CONFIRMED".equalsIgnoreCase(r.getStatus()))
-                .sorted(Comparator.comparing(Reservation::getEndDatetime, Comparator.nullsLast(Comparator.naturalOrder())))
+                .sorted(Comparator.comparing(Reservation::getStartDatetime, Comparator.nullsLast(Comparator.naturalOrder())))
                 .forEach(System.out::println);
 
         // 5. Transform to DTOs, sort by natural order (startDatetime) and collect into List, then print
@@ -58,7 +49,8 @@ public class Main {
 
         // 6. Serialization: store collection of categories (employees) to binary file and read it back
         System.out.println("\n=== 6) Serialization of employees (with reservations) ===");
-        File serFile = new File("employees.ser");
+        File serFile = new File("ser/employees.ser");
+        serFile.getParentFile().mkdirs();
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(serFile))) {
             oos.writeObject(employees);
         }
@@ -70,7 +62,12 @@ public class Main {
             if (o instanceof List) {
                 List<?> read = (List<?>) o;
                 System.out.println("Read back objects:");
-                read.forEach(System.out::println);
+                read.forEach(emp -> {
+                    System.out.println(emp);
+                    if (emp instanceof Employee e) {
+                        e.getReservations().forEach(r -> System.out.println("   -> " + r));
+                    }
+                });
             }
         }
 
@@ -108,7 +105,8 @@ public class Main {
         System.out.println("Service stored reservations: " + service.findAll().size());
 
         // store reservations using ReservationService helper
-        File resFile = new File("reservations.ser");
+        File resFile = new File("ser/reservations.ser");
+        resFile.getParentFile().mkdirs();
         service.saveToFile(resFile);
         System.out.println("Reservations saved to " + resFile.getAbsolutePath());
 

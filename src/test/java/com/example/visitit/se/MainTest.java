@@ -12,7 +12,7 @@ public class MainTest {
 
     @Test
     public void dataGeneratorProducesEmployees() {
-        List<Employee> employees = DataGenerator.sampleEmployeesWithReservations();
+        List<Employee> employees = DataGenerator.sampleEmployeesWithReservations(5,5,3,8);
         assertNotNull(employees);
         assertTrue(employees.size() >= 1);
         employees.forEach(e -> assertNotNull(e.getReservations()));

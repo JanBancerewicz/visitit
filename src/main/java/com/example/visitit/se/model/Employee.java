@@ -21,14 +21,14 @@ public class Employee implements Comparable<Employee>, Serializable {
     private String role;
     private String description;
 
-    // 1:N relationship: one Employee -> many Reservations
+    // lista rezerwacji przypisana do pracownika
     @Builder.Default
     private List<Reservation> reservations = new ArrayList<>();
 
     @Override
     public int compareTo(Employee o) {
         if (this.id != null && o.id != null) return this.id.compareTo(o.id);
-        int cmp = compareNullable(this.lastName, o.lastName);
+        int cmp = compareNullable(this.lastName, o.lastName); // kolejnosc sortowania
         if (cmp != 0) return cmp;
         return compareNullable(this.firstName, o.firstName);
     }
