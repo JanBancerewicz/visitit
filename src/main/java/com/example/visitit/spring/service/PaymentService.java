@@ -2,20 +2,27 @@ package com.example.visitit.spring.service;
 
 import com.example.visitit.spring.model.Payment;
 import com.example.visitit.spring.repository.PaymentRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
 
+    public PaymentService(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
     public List<Payment> findAll() {
         return paymentRepository.findAll();
+    }
+
+    public Optional<Payment> findById(UUID id) {
+        return paymentRepository.findById(id);
     }
 
     public Payment save(Payment payment) {
@@ -29,7 +36,7 @@ public class PaymentService {
         paymentRepository.delete(payment);
     }
 
-    public Payment findById(UUID id) {
-        return paymentRepository.findById(id).orElse(null);
+    public void deleteById(UUID id) {
+        paymentRepository.deleteById(id);
     }
 }
