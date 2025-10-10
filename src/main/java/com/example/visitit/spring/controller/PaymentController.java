@@ -83,7 +83,7 @@ public class PaymentController {
         return paymentService.findById(id)
                 .map(payment -> {
                     paymentService.delete(payment);
-                    return ResponseEntity.noContent().<Void>build();
+                    return ResponseEntity.noContent().<Void>build();h
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
