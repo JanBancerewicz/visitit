@@ -14,15 +14,22 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.example.visitit.spring.dto.reservation.ReservationListDTO;
+import com.example.visitit.spring.model.Reservation;
+import com.example.visitit.spring.service.ReservationService;
+
 @RestController
 @RequestMapping("/api/clients")
 public class ClientController {
 
     private final ClientService clientService;
+    private final ReservationService reservationService;
 
-    public ClientController(ClientService clientService) {
+    public ClientController(ClientService clientService, ReservationService reservationService) {
         this.clientService = clientService;
+        this.reservationService = reservationService;
     }
+
 
     // GET /api/clients - lista wszystkich klientów (tylko podstawowe dane)
     @GetMapping
@@ -112,5 +119,28 @@ public class ClientController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    private ReservationListDTO toListDTO(Reservation r) {
+        return ReservationListDTO.builder()
+                .id(r.getId())
+                .clientName(r.getClient().getFirstName() + " " + r.getClient().getLastName())
+                .employeeName(r.getEmployee().getFirstName() + " " + r.getEmployee().getLastName())
+                .serviceName(r.getService().getName())
+                .roomName(r.getRoom().getName())
+                .status(r.getStatus())
+                .build();
+    }
+
+    @GetMapping("/{id}/reservations")
+    public ResponseEntity<List<ReservationListDTO>> getClientReservations(@PathVariable UUID id) {
+        return clientService.findById(id)
+                .map(c -> reservationService.findByClient(id).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
+
+
 
 }

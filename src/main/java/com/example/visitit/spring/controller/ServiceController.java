@@ -14,14 +14,22 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.example.visitit.spring.dto.reservation.ReservationListDTO;
+import com.example.visitit.spring.model.Reservation;
+import com.example.visitit.spring.service.ReservationService;
+
 @RestController
 @RequestMapping("/api/services")
 public class ServiceController {
 
     private final ServiceService serviceService;
 
-    public ServiceController(ServiceService serviceService) {
+    private final ReservationService reservationService;
+
+
+    public ServiceController(ServiceService serviceService, ReservationService reservationService) {
         this.serviceService = serviceService;
+        this.reservationService = reservationService;
     }
 
     // GET /api/services - lista wszystkich usług
@@ -96,5 +104,24 @@ public class ServiceController {
                 .durationMin(s.getDurationMin())
                 .price(s.getPrice())
                 .build();
+    }
+
+    private ReservationListDTO toListDTO(Reservation r) {
+        return ReservationListDTO.builder()
+                .id(r.getId())
+                .clientName(r.getClient().getFirstName() + " " + r.getClient().getLastName())
+                .employeeName(r.getEmployee().getFirstName() + " " + r.getEmployee().getLastName())
+                .serviceName(r.getService().getName())
+                .roomName(r.getRoom().getName())
+                .status(r.getStatus())
+                .build();
+    }
+
+    @GetMapping("/{id}/reservations")
+    public ResponseEntity<List<ReservationListDTO>> getServiceReservations(@PathVariable UUID id) {
+        return serviceService.findById(id)
+                .map(s -> reservationService.findByService(id).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

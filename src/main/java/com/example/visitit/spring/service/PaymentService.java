@@ -39,4 +39,12 @@ public class PaymentService {
     public void deleteById(UUID id) {
         paymentRepository.deleteById(id);
     }
+
+    public Optional<Payment> findByReservation(UUID reservationId) {
+        return paymentRepository.findByReservationId(reservationId);
+    }
+
+    public boolean existsForReservation(UUID reservationId) {
+        return paymentRepository.existsByReservationId(reservationId);
+    }
 }

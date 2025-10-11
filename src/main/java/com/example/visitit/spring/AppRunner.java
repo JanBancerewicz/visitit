@@ -138,54 +138,70 @@ public class AppRunner implements CommandLineRunner {
     }
 
     private void deleteEmployee() {
-        System.out.print("Enter Employee ID to delete: ");
-        UUID id = UUID.fromString(scanner.nextLine());
-        Employee e = employeeService.findAll().stream()
-                .filter(emp -> emp.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-        if (e != null) {
-            employeeService.delete(e);
-            System.out.println("Employee deleted: " + e);
-        } else System.out.println("Employee not found.");
+        try {
+            System.out.print("Enter Employee ID to delete: ");
+            UUID id = UUID.fromString(scanner.nextLine());
+            Employee e = employeeService.findAll().stream()
+                    .filter(emp -> emp.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+            if (e != null) {
+                employeeService.delete(e);
+                System.out.println("Employee deleted: " + e);
+            } else System.out.println("Employee not found.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid UUID format.");
+        }
     }
 
     private void deleteClient() {
-        System.out.print("Enter Client ID to delete: ");
-        UUID id = UUID.fromString(scanner.nextLine());
-        Client c = clientService.findAll().stream()
-                .filter(cli -> cli.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-        if (c != null) {
-            clientService.delete(c);
-            System.out.println("Client deleted: " + c);
-        } else System.out.println("Client not found.");
+        try{
+            System.out.print("Enter Client ID to delete: ");
+            UUID id = UUID.fromString(scanner.nextLine());
+            Client c = clientService.findAll().stream()
+                    .filter(cli -> cli.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+            if (c != null) {
+                clientService.delete(c);
+                System.out.println("Client deleted: " + c);
+            } else System.out.println("Client not found.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid UUID format.");
+        }
     }
 
     private void deleteService() {
-        System.out.print("Enter Service ID to delete: ");
-        UUID id = UUID.fromString(scanner.nextLine());
-        Service s = serviceService.findAll().stream()
-                .filter(serv -> serv.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-        if (s != null) {
-            serviceService.delete(s);
-            System.out.println("Service deleted: " + s);
-        } else System.out.println("Service not found.");
+        try{
+            System.out.print("Enter Service ID to delete: ");
+            UUID id = UUID.fromString(scanner.nextLine());
+            Service s = serviceService.findAll().stream()
+                    .filter(serv -> serv.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+            if (s != null) {
+                serviceService.delete(s);
+                System.out.println("Service deleted: " + s);
+            } else System.out.println("Service not found.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid UUID format.");
+        }
     }
 
     private void deleteRoom() {
-        System.out.print("Enter Room ID to delete: ");
-        UUID id = UUID.fromString(scanner.nextLine());
-        Room r = roomService.findAll().stream()
-                .filter(room -> room.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-        if (r != null) {
-            roomService.delete(r);
-            System.out.println("Room deleted: " + r);
-        } else System.out.println("Room not found.");
+        try{
+            System.out.print("Enter Room ID to delete: ");
+            UUID id = UUID.fromString(scanner.nextLine());
+            Room r = roomService.findAll().stream()
+                    .filter(room -> room.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+            if (r != null) {
+                roomService.delete(r);
+                System.out.println("Room deleted: " + r);
+            } else System.out.println("Room not found.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid UUID format.");
+        }
     }
 }

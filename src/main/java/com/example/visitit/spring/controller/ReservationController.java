@@ -1,5 +1,7 @@
 package com.example.visitit.spring.controller;
 
+
+
 import com.example.visitit.spring.dto.reservation.ReservationCreateDTO;
 import com.example.visitit.spring.dto.reservation.ReservationDTO;
 import com.example.visitit.spring.dto.reservation.ReservationListDTO;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -134,4 +137,55 @@ public class ReservationController {
                 .note(r.getNote())
                 .build();
     }
+
+    private ReservationListDTO toListDTO(Reservation r) {
+        return ReservationListDTO.builder()
+                .id(r.getId())
+                .clientName(r.getClient().getFirstName() + " " + r.getClient().getLastName())
+                .employeeName(r.getEmployee().getFirstName() + " " + r.getEmployee().getLastName())
+                .serviceName(r.getService().getName())
+                .roomName(r.getRoom().getName())
+                .status(r.getStatus())
+                .build();
+    }
+
+    // GET /api/reservations?status=CONFIRMED
+    @GetMapping(params = "status")
+    public List<ReservationListDTO> getByStatus(@RequestParam String status) {
+        return reservationService.findByStatus(status).stream()
+                .map(this::toListDTO).collect(Collectors.toList());
+    }
+
+    @GetMapping("/by-client/{clientId}")
+    public ResponseEntity<List<ReservationListDTO>> getByClient(@PathVariable UUID clientId) {
+        return clientService.findById(clientId)
+                .map(c -> reservationService.findByClient(clientId).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/by-employee/{employeeId}")
+    public ResponseEntity<List<ReservationListDTO>> getByEmployee(@PathVariable UUID employeeId) {
+        return employeeService.findById(employeeId)
+                .map(e -> reservationService.findByEmployee(employeeId).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/by-service/{serviceId}")
+    public ResponseEntity<List<ReservationListDTO>> getByService(@PathVariable UUID serviceId) {
+        return serviceService.findById(serviceId)
+                .map(s -> reservationService.findByService(serviceId).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/by-room/{roomId}")
+    public ResponseEntity<List<ReservationListDTO>> getByRoom(@PathVariable UUID roomId) {
+        return roomService.findById(roomId)
+                .map(r -> reservationService.findByRoom(roomId).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 }

@@ -5,90 +5,116 @@ import com.example.visitit.spring.dto.payment.PaymentDTO;
 import com.example.visitit.spring.model.Payment;
 import com.example.visitit.spring.service.PaymentService;
 import com.example.visitit.spring.service.ReservationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
     private final ReservationService reservationService;
 
-    // GET all payments
-    @GetMapping
+    /* ---------- /api/payments ---------- */
+
+    @GetMapping("/payments")
     public List<PaymentDTO> getAllPayments() {
-        return paymentService.findAll()
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+        return paymentService.findAll().stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    // GET payment by ID
-    @GetMapping("/{id}")
+    @GetMapping("/payments/{id}")
     public ResponseEntity<PaymentDTO> getPaymentById(@PathVariable UUID id) {
         return paymentService.findById(id)
                 .map(this::toDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // POST create payment
-    @PostMapping
+    @PostMapping("/payments")
     public ResponseEntity<PaymentDTO> createPayment(@Valid @RequestBody PaymentCreateDTO dto) {
-        return reservationService.findById(dto.getReservationId())
-                .map(reservation -> {
-                    Payment payment = Payment.builder()
-                            .reservation(reservation)
-                            .amount(dto.getAmount())
-                            .status(dto.getStatus())
-                            .method(dto.getMethod())
-                            .paymentDate(dto.getPaymentDate())
-                            .build();
-                    Payment saved = paymentService.save(payment);
-                    return new ResponseEntity<>(toDTO(saved), HttpStatus.CREATED);
-                })
-                .orElse(ResponseEntity.badRequest().build());
+        if (dto.getReservationId() == null) return ResponseEntity.badRequest().build();
+        if (paymentService.existsForReservation(dto.getReservationId()))
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+
+        return reservationService.findById(dto.getReservationId()).map(res -> {
+            Payment payment = Payment.builder()
+                    .reservation(res)
+                    .amount(dto.getAmount())
+                    .status(dto.getStatus())
+                    .method(dto.getMethod())
+                    .paymentDate(dto.getPaymentDate())
+                    .build();
+            Payment saved = paymentService.save(payment);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .header("Location", "/api/payments/" + saved.getId())
+                    .body(toDTO(saved));
+        }).orElse(ResponseEntity.badRequest().build());
     }
 
-    // PUT update payment
-    @PutMapping("/{id}")
+    @PutMapping("/payments/{id}")
     public ResponseEntity<PaymentDTO> updatePayment(@PathVariable UUID id,
                                                     @Valid @RequestBody PaymentCreateDTO dto) {
-        return paymentService.findById(id)
-                .map(payment -> {
-                    reservationService.findById(dto.getReservationId())
-                            .ifPresent(payment::setReservation);
-                    if (dto.getAmount() != null) payment.setAmount(dto.getAmount());
-                    if (dto.getStatus() != null) payment.setStatus(dto.getStatus());
-                    if (dto.getMethod() != null) payment.setMethod(dto.getMethod());
-                    if (dto.getPaymentDate() != null) payment.setPaymentDate(dto.getPaymentDate());
-                    Payment updated = paymentService.save(payment);
-                    return ResponseEntity.ok(toDTO(updated));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return paymentService.findById(id).map(existing -> {
+            // nie zmieniamy powiązania z rezerwacją w tym wariancie
+            if (dto.getAmount() != null) existing.setAmount(dto.getAmount());
+            if (dto.getStatus() != null) existing.setStatus(dto.getStatus());
+            if (dto.getMethod() != null) existing.setMethod(dto.getMethod());
+            if (dto.getPaymentDate() != null) existing.setPaymentDate(dto.getPaymentDate());
+            Payment updated = paymentService.save(existing);
+            return ResponseEntity.ok(toDTO(updated));
+        }).orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // DELETE payment
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/payments/{id}")
     public ResponseEntity<Void> deletePayment(@PathVariable UUID id) {
-        return paymentService.findById(id)
-                .map(payment -> {
-                    paymentService.delete(payment);
-                    return ResponseEntity.noContent().<Void>build();h
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return paymentService.findById(id).map(p -> {
+            paymentService.delete(p);
+            return ResponseEntity.noContent().<Void>build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 
-    // Helper: convert Payment -> PaymentDTO
+    /* ---------- /api/reservations/{reservationId}/payment ---------- */
+
+    @GetMapping("/reservations/{reservationId}/payment")
+    public ResponseEntity<PaymentDTO> getByReservation(@PathVariable UUID reservationId) {
+        return reservationService.findById(reservationId)
+                .map(r -> paymentService.findByReservation(reservationId)
+                        .map(p -> ResponseEntity.ok(toDTO(p)))
+                        .orElseGet(() -> new ResponseEntity<PaymentDTO>(HttpStatus.NO_CONTENT)))
+                .orElseGet(() -> new ResponseEntity<PaymentDTO>(HttpStatus.NOT_FOUND));
+    }
+
+    @PostMapping("/reservations/{reservationId}/payment")
+    public ResponseEntity<PaymentDTO> createForReservation(@PathVariable UUID reservationId,
+                                                           @RequestBody PaymentCreateDTO body) {
+        return reservationService.findById(reservationId).map(res -> {
+            if (paymentService.existsForReservation(reservationId))
+                return ResponseEntity.status(HttpStatus.CONFLICT).<PaymentDTO>build();
+            if (body == null || body.getAmount() == null)
+                return ResponseEntity.badRequest().<PaymentDTO>build();
+
+            Payment p = Payment.builder()
+                    .reservation(res)
+                    .amount(body.getAmount())
+                    .status(body.getStatus())
+                    .method(body.getMethod())
+                    .paymentDate(body.getPaymentDate())
+                    .build();
+            Payment saved = paymentService.save(p);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .header("Location", "/api/payments/" + saved.getId())
+                    .body(toDTO(saved));
+        }).orElseGet(() -> new ResponseEntity<PaymentDTO>(HttpStatus.NOT_FOUND));
+    }
+
     private PaymentDTO toDTO(Payment payment) {
         return PaymentDTO.builder()
                 .id(payment.getId())

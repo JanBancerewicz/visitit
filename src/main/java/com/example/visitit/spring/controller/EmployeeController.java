@@ -14,14 +14,21 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.example.visitit.spring.dto.reservation.ReservationListDTO;
+import com.example.visitit.spring.model.Reservation;
+import com.example.visitit.spring.service.ReservationService;
+
 @RestController
 @RequestMapping("/api/employees")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
 
-    public EmployeeController(EmployeeService employeeService) {
+    private final ReservationService reservationService;
+
+    public EmployeeController(EmployeeService employeeService, ReservationService reservationService) {
         this.employeeService = employeeService;
+        this.reservationService = reservationService;
     }
 
     // GET /api/employees - lista wszystkich pracowników
@@ -100,4 +107,25 @@ public class EmployeeController {
                         : null)
                 .build();
     }
+
+    private ReservationListDTO toListDTO(Reservation r) {
+        return ReservationListDTO.builder()
+                .id(r.getId())
+                .clientName(r.getClient().getFirstName() + " " + r.getClient().getLastName())
+                .employeeName(r.getEmployee().getFirstName() + " " + r.getEmployee().getLastName())
+                .serviceName(r.getService().getName())
+                .roomName(r.getRoom().getName())
+                .status(r.getStatus())
+                .build();
+    }
+
+    @GetMapping("/{id}/reservations")
+    public ResponseEntity<List<ReservationListDTO>> getEmployeeReservations(@PathVariable UUID id) {
+        return employeeService.findById(id)
+                .map(e -> reservationService.findByEmployee(id).stream().map(this::toListDTO).collect(Collectors.toList()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
 }
