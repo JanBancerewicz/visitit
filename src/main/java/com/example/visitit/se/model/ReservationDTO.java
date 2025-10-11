@@ -14,7 +14,7 @@ public class ReservationDTO implements Comparable<ReservationDTO>, Serializable 
 
     private Long id;
     private String clientFullName;
-    // instead of whole Employee object we keep only one identifying field:
+    // zamiast employee, trzymamy tylko interesujace nas pola:
     private String employeeFullName;
     private String serviceName;
     private String roomName;

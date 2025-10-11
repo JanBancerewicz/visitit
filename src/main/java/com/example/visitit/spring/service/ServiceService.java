@@ -2,9 +2,9 @@ package com.example.visitit.spring.service;
 
 import com.example.visitit.spring.model.Service;
 import com.example.visitit.spring.repository.ServiceRepository;
-//import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @org.springframework.stereotype.Service
@@ -20,6 +20,10 @@ public class ServiceService {
         return serviceRepository.findAll();
     }
 
+    public Optional<Service> findById(UUID id) {
+        return serviceRepository.findById(id);
+    }
+
     public Service save(Service service) {
         if (service.getId() == null) {
             service.setId(UUID.randomUUID());
@@ -29,5 +33,9 @@ public class ServiceService {
 
     public void delete(Service service) {
         serviceRepository.delete(service);
+    }
+
+    public void deleteById(UUID id) {
+        serviceRepository.deleteById(id);
     }
 }

@@ -5,6 +5,7 @@ import com.example.visitit.spring.repository.ClientRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,5 +30,15 @@ public class ClientService {
 
     public void delete(Client client) {
         clientRepository.delete(client);
+    }
+
+    // --- Dodatki potrzebne do kontrolera ---
+
+    public Optional<Client> findById(UUID id) {
+        return clientRepository.findById(id);
+    }
+
+    public void deleteById(UUID id) {
+        clientRepository.deleteById(id);
     }
 }

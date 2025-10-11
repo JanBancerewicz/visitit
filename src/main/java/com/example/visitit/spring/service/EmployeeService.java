@@ -5,6 +5,7 @@ import com.example.visitit.spring.repository.EmployeeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,6 +21,10 @@ public class EmployeeService {
         return employeeRepository.findAll();
     }
 
+    public Optional<Employee> findById(UUID id) {
+        return employeeRepository.findById(id);
+    }
+
     public Employee save(Employee employee) {
         if (employee.getId() == null) {
             employee.setId(UUID.randomUUID());
@@ -29,5 +34,9 @@ public class EmployeeService {
 
     public void delete(Employee employee) {
         employeeRepository.delete(employee);
+    }
+
+    public void deleteById(UUID id) {
+        employeeRepository.deleteById(id);
     }
 }

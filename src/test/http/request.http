@@ -1,0 +1,150 @@
+### CLIENTS — LIST
+GET {{host}}/api/clients
+
+### CLIENTS — CREATE  -> sets {{clientId}}
+POST {{host}}/api/clients
+Content-Type: {{ct}}
+
+{
+  "firstName": "Jan",
+  "lastName": "Kowalski",
+  "email": "jan.kowalski@example.com",
+  "phone": "555111222"
+}
+> {% client.global.set("clientId", response.body.id); %}
+
+### CLIENT — GET BY ID
+GET {{host}}/api/clients/{{clientId}}
+
+### EMPLOYEES — LIST
+GET {{host}}/api/employees
+
+### EMPLOYEES — CREATE  -> sets {{employeeId}}
+POST {{host}}/api/employees
+Content-Type: {{ct}}
+
+{
+  "firstName": "Anna",
+  "lastName": "Lis",
+  "role": "Fryzjer",
+  "description": "Stylista damski"
+}
+> {% client.global.set("employeeId", response.body.id); %}
+
+### EMPLOYEE — GET BY ID
+GET {{host}}/api/employees/{{employeeId}}
+
+### ROOMS — LIST
+GET {{host}}/api/rooms
+
+### ROOMS — CREATE  -> sets {{roomId}}
+POST {{host}}/api/rooms
+Content-Type: {{ct}}
+
+{
+  "name": "Gabinet 1"
+}
+> {% client.global.set("roomId", response.body.id); %}
+
+### ROOM — GET BY ID
+GET {{host}}/api/rooms/{{roomId}}
+
+### SERVICES — LIST
+GET {{host}}/api/services
+
+### SERVICES — CREATE  -> sets {{serviceId}}
+POST {{host}}/api/services
+Content-Type: {{ct}}
+
+{
+  "name": "Strzyżenie",
+  "description": "Klasyczne",
+  "durationMin": 60,
+  "price": 89.99
+}
+> {% client.global.set("serviceId", response.body.id); %}
+
+### SERVICE — GET BY ID
+GET {{host}}/api/services/{{serviceId}}
+
+### RESERVATIONS — LIST
+GET {{host}}/api/reservations
+
+### RESERVATIONS — CREATE  -> sets {{reservationId}}
+POST {{host}}/api/reservations
+Content-Type: {{ct}}
+
+{
+  "clientId": "{{clientId}}",
+  "employeeId": "{{employeeId}}",
+  "serviceId": "{{serviceId}}",
+  "roomId": "{{roomId}}",
+  "startDatetime": "2025-10-15T10:00:00",
+  "endDatetime": "2025-10-15T11:00:00",
+  "status": "CONFIRMED",
+  "note": "pierwsza wizyta"
+}
+> {% client.global.set("reservationId", response.body.id); %}
+
+### RESERVATION — GET BY ID
+GET {{host}}/api/reservations/{{reservationId}}
+
+### RESERVATIONS — FILTER BY STATUS
+GET {{host}}/api/reservations?status=CONFIRMED
+
+### HIERARCHY — CLIENT -> RESERVATIONS
+GET {{host}}/api/clients/{{clientId}}/reservations
+
+### HIERARCHY — EMPLOYEE -> RESERVATIONS
+GET {{host}}/api/employees/{{employeeId}}/reservations
+
+### HIERARCHY — SERVICE -> RESERVATIONS
+GET {{host}}/api/services/{{serviceId}}/reservations
+
+### HIERARCHY — ROOM -> RESERVATIONS
+GET {{host}}/api/rooms/{{roomId}}/reservations
+
+### PAYMENTS — LIST
+GET {{host}}/api/payments
+
+### PAYMENTS — CREATE (flat)  -> sets {{paymentId}}
+POST {{host}}/api/payments
+Content-Type: {{ct}}
+
+{
+  "reservationId": "{{reservationId}}",
+  "amount": 89.99,
+  "status": "PAID",
+  "method": "CARD",
+  "paymentDate": "2025-10-15T11:05:00"
+}
+> {% client.global.set("paymentId", response.body.id); %}
+
+### PAYMENT — GET BY ID
+GET {{host}}/api/payments/{{paymentId}}
+
+### HIERARCHY — RESERVATION -> PAYMENT
+# 200 jeśli istnieje, 204 jeśli brak, 404 jeśli brak rezerwacji
+GET {{host}}/api/reservations/{{reservationId}}/payment
+
+### HIERARCHY — CREATE PAYMENT FOR RESERVATION  (druga próba da 409)
+POST {{host}}/api/reservations/{{reservationId}}/payment
+Content-Type: {{ct}}
+
+{
+  "amount": 79.99,
+  "status": "PAID",
+  "method": "BLIK",
+  "paymentDate": "2025-10-15T11:10:00"
+}
+
+### PAYMENT — DUPLICATE IN HIERARCHY (expect 409)
+POST {{host}}/api/reservations/{{reservationId}}/payment
+Content-Type: {{ct}}
+
+{
+  "amount": 10.00
+}
+
+### HEALTH (opcjonalnie; wymaga Actuator)
+GET {{host}}/actuator/health
