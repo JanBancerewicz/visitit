@@ -10,4 +10,6 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     void deleteByReservation_Id(UUID reservationId);
 
+    void deleteByReservationIdIn(Collection<UUID> reservationIds);
+
 }

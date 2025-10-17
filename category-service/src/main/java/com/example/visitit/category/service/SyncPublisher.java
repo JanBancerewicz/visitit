@@ -1,5 +1,9 @@
 package com.example.visitit.category.service;
 
+import com.example.visitit.category.dto.sync.ClientSyncDTO;
+import com.example.visitit.category.dto.sync.EmployeeSyncDTO;
+import com.example.visitit.category.dto.sync.RoomSyncDTO;
+import com.example.visitit.category.dto.sync.ServiceSyncDTO;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,4 +39,11 @@ public class SyncPublisher {
                 .retrieve().toBodilessEntity().block(); }
         catch (Exception e){ log.warn("SYNC upsert {} {} failed: {}", type, body.get("id"), e.toString()); }
     }
+
+    // fragment: opcjonalne przeciążenia
+    public void upsertClient(ClientSyncDTO d){ upsertClient(d.id(), d.displayName()); }
+    public void upsertEmployee(EmployeeSyncDTO d){ upsertEmployee(d.id(), d.displayName()); }
+    public void upsertService(ServiceSyncDTO d){ upsertService(d.id(), d.name()); }
+    public void upsertRoom(RoomSyncDTO d){ upsertRoom(d.id(), d.name()); }
+
 }

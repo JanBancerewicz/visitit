@@ -1,0 +1,26 @@
+http://localhost:8080/api/clients
+
+http://localhost:8080/api/employees
+
+http://localhost:8080/api/services
+
+http://localhost:8080/api/rooms
+
+http://localhost:8080/api/reservations
+
+http://localhost:8080/api/payments
+
+http://localhost:8081/api/clients
+
+http://localhost:8082/api/reservations
+
+
+
+curl.exe -i http://localhost:8081/actuator/health
+curl.exe -i http://localhost:8082/actuator/health
+curl.exe -i http://localhost:8080/actuator/health
+
+curl.exe -i http://localhost:8080/api/clients
+curl.exe -i http://localhost:8080/api/reservations
+
+mvn -q -f category-service/pom.xml spring-boot:run

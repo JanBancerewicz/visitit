@@ -1,0 +1,121 @@
+### ——— HEALTH
+GET {{host}}/actuator/health
+
+### ——— CLIENTS: CREATE -> clientId
+POST {{host}}/api/clients
+Content-Type: {{ct}}
+
+{
+  "firstName": "Jan",
+  "lastName": "Kowalski",
+  "email": "jan.kowalski@example.com",
+  "phone": "555111222"
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("clientId", b.id);
+%}
+
+### CLIENTS: GET BY ID
+GET {{host}}/api/clients/{{clientId}}
+
+### ——— EMPLOYEES: CREATE -> employeeId
+POST {{host}}/api/employees
+Content-Type: {{ct}}
+
+{
+  "firstName": "Anna",
+  "lastName": "Lis",
+  "role": "Fryzjer",
+  "description": "Stylista"
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("employeeId", b.id);
+%}
+
+### ——— SERVICES: CREATE -> serviceId
+POST {{host}}/api/services
+Content-Type: {{ct}}
+
+{
+  "name": "Strzyżenie",
+  "description": "Klasyczne",
+  "durationMin": 60,
+  "price": 89.99
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("serviceId", b.id);
+%}
+
+### ——— ROOMS: CREATE -> roomId
+POST {{host}}/api/rooms
+Content-Type: {{ct}}
+
+{
+  "name": "Gabinet 1"
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("roomId", b.id);
+%}
+
+### ——— RESERVATIONS: LIST
+GET {{host}}/api/reservations
+
+### RESERVATIONS: CREATE -> reservationId
+POST {{host}}/api/reservations
+Content-Type: {{ct}}
+
+{
+  "clientId": "{{clientId}}",
+  "employeeId": "{{employeeId}}",
+  "serviceId": "{{serviceId}}",
+  "roomId": "{{roomId}}",
+  "startDatetime": "2025-10-15T10:00:00",
+  "endDatetime": "2025-10-15T11:00:00",
+  "status": "CONFIRMED",
+  "note": "pierwsza wizyta"
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("reservationId", b.id);
+%}
+
+### RESERVATIONS: GET BY ID
+GET {{host}}/api/reservations/{{reservationId}}
+
+### RESERVATIONS: FILTER status
+GET {{host}}/api/reservations?status=CONFIRMED
+
+### ——— PAYMENTS: CREATE (hierarchia) -> paymentId
+POST {{host}}/api/reservations/{{reservationId}}/payment
+Content-Type: {{ct}}
+
+{
+  "amount": 89.99,
+  "status": "PAID",
+  "method": "CARD",
+  "paymentDate": "2025-10-15T11:05:00"
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("paymentId", b.id);
+%}
+
+### PAYMENTS: GET BY RESERVATION
+GET {{host}}/api/reservations/{{reservationId}}/payment
+
+### PAYMENTS: DUPLICATE (409 expected)
+POST {{host}}/api/reservations/{{reservationId}}/payment
+Content-Type: {{ct}}
+
+{
+  "amount": 10.00
+}
+
+### ——— CLEANUP
+DELETE {{host}}/api/clients/{{clientId}}
+GET {{host}}/api/reservations/{{reservationId}}
+GET {{host}}/api/reservations
