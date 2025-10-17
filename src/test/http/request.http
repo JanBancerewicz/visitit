@@ -1,7 +1,7 @@
-### CLIENTS — LIST
-GET {{host}}/api/clients
+### ——— HEALTH
+GET {{host}}/actuator/health
 
-### CLIENTS — CREATE  -> sets {{clientId}}
+### ——— CLIENTS: CREATE -> clientId
 POST {{host}}/api/clients
 Content-Type: {{ct}}
 
@@ -11,15 +11,15 @@ Content-Type: {{ct}}
   "email": "jan.kowalski@example.com",
   "phone": "555111222"
 }
-> {% client.global.set("clientId", response.body.id); %}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("clientId", b.id);
+%}
 
-### CLIENT — GET BY ID
+### CLIENTS: GET BY ID
 GET {{host}}/api/clients/{{clientId}}
 
-### EMPLOYEES — LIST
-GET {{host}}/api/employees
-
-### EMPLOYEES — CREATE  -> sets {{employeeId}}
+### ——— EMPLOYEES: CREATE -> employeeId
 POST {{host}}/api/employees
 Content-Type: {{ct}}
 
@@ -27,32 +27,14 @@ Content-Type: {{ct}}
   "firstName": "Anna",
   "lastName": "Lis",
   "role": "Fryzjer",
-  "description": "Stylista damski"
+  "description": "Stylista"
 }
-> {% client.global.set("employeeId", response.body.id); %}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("employeeId", b.id);
+%}
 
-### EMPLOYEE — GET BY ID
-GET {{host}}/api/employees/{{employeeId}}
-
-### ROOMS — LIST
-GET {{host}}/api/rooms
-
-### ROOMS — CREATE  -> sets {{roomId}}
-POST {{host}}/api/rooms
-Content-Type: {{ct}}
-
-{
-  "name": "Gabinet 1"
-}
-> {% client.global.set("roomId", response.body.id); %}
-
-### ROOM — GET BY ID
-GET {{host}}/api/rooms/{{roomId}}
-
-### SERVICES — LIST
-GET {{host}}/api/services
-
-### SERVICES — CREATE  -> sets {{serviceId}}
+### ——— SERVICES: CREATE -> serviceId
 POST {{host}}/api/services
 Content-Type: {{ct}}
 
@@ -62,15 +44,27 @@ Content-Type: {{ct}}
   "durationMin": 60,
   "price": 89.99
 }
-> {% client.global.set("serviceId", response.body.id); %}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("serviceId", b.id);
+%}
 
-### SERVICE — GET BY ID
-GET {{host}}/api/services/{{serviceId}}
+### ——— ROOMS: CREATE -> roomId
+POST {{host}}/api/rooms
+Content-Type: {{ct}}
 
-### RESERVATIONS — LIST
+{
+  "name": "Gabinet 1"
+}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("roomId", b.id);
+%}
+
+### ——— RESERVATIONS: LIST
 GET {{host}}/api/reservations
 
-### RESERVATIONS — CREATE  -> sets {{reservationId}}
+### RESERVATIONS: CREATE -> reservationId
 POST {{host}}/api/reservations
 Content-Type: {{ct}}
 
@@ -84,61 +78,36 @@ Content-Type: {{ct}}
   "status": "CONFIRMED",
   "note": "pierwsza wizyta"
 }
-> {% client.global.set("reservationId", response.body.id); %}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("reservationId", b.id);
+%}
 
-### RESERVATION — GET BY ID
+### RESERVATIONS: GET BY ID
 GET {{host}}/api/reservations/{{reservationId}}
 
-### RESERVATIONS — FILTER BY STATUS
+### RESERVATIONS: FILTER status
 GET {{host}}/api/reservations?status=CONFIRMED
 
-### HIERARCHY — CLIENT -> RESERVATIONS
-GET {{host}}/api/clients/{{clientId}}/reservations
-
-### HIERARCHY — EMPLOYEE -> RESERVATIONS
-GET {{host}}/api/employees/{{employeeId}}/reservations
-
-### HIERARCHY — SERVICE -> RESERVATIONS
-GET {{host}}/api/services/{{serviceId}}/reservations
-
-### HIERARCHY — ROOM -> RESERVATIONS
-GET {{host}}/api/rooms/{{roomId}}/reservations
-
-### PAYMENTS — LIST
-GET {{host}}/api/payments
-
-### PAYMENTS — CREATE (flat)  -> sets {{paymentId}}
-POST {{host}}/api/payments
+### ——— PAYMENTS: CREATE (hierarchia) -> paymentId
+POST {{host}}/api/reservations/{{reservationId}}/payment
 Content-Type: {{ct}}
 
 {
-  "reservationId": "{{reservationId}}",
   "amount": 89.99,
   "status": "PAID",
   "method": "CARD",
   "paymentDate": "2025-10-15T11:05:00"
 }
-> {% client.global.set("paymentId", response.body.id); %}
+> {%
+    let b = response.body; if (typeof b === 'string') { try { b = JSON.parse(b); } catch(e){} }
+    if (response.status >= 200 && response.status < 300 && b && b.id) client.global.set("paymentId", b.id);
+%}
 
-### PAYMENT — GET BY ID
-GET {{host}}/api/payments/{{paymentId}}
-
-### HIERARCHY — RESERVATION -> PAYMENT
-# 200 jeśli istnieje, 204 jeśli brak, 404 jeśli brak rezerwacji
+### PAYMENTS: GET BY RESERVATION
 GET {{host}}/api/reservations/{{reservationId}}/payment
 
-### HIERARCHY — CREATE PAYMENT FOR RESERVATION  (druga próba da 409)
-POST {{host}}/api/reservations/{{reservationId}}/payment
-Content-Type: {{ct}}
-
-{
-  "amount": 79.99,
-  "status": "PAID",
-  "method": "BLIK",
-  "paymentDate": "2025-10-15T11:10:00"
-}
-
-### PAYMENT — DUPLICATE IN HIERARCHY (expect 409)
+### PAYMENTS: DUPLICATE (409 expected)
 POST {{host}}/api/reservations/{{reservationId}}/payment
 Content-Type: {{ct}}
 
@@ -146,5 +115,7 @@ Content-Type: {{ct}}
   "amount": 10.00
 }
 
-### HEALTH (opcjonalnie; wymaga Actuator)
-GET {{host}}/actuator/health
+### ——— CLEANUP
+DELETE {{host}}/api/clients/{{clientId}}
+GET {{host}}/api/reservations/{{reservationId}}
+GET {{host}}/api/reservations
