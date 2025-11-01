@@ -2,6 +2,7 @@ package com.example.visitit.category.controller;
 
 import com.example.visitit.category.model.Client;
 import com.example.visitit.category.service.ClientService;
+import com.example.visitit.category.sync.SyncPublisher;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -15,6 +16,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ClientController {
     private final ClientService service;
+    private final SyncPublisher sync;
 
     @GetMapping public List<Client> list(){ return service.findAll(); }
 
@@ -26,6 +28,7 @@ public class ClientController {
     @PostMapping
     public ResponseEntity<Client> create(@Valid @RequestBody Client body){
         Client saved = service.create(body);
+        sync.pushClient(saved.getId(), saved.getFirstName() + " " + saved.getLastName());
         return ResponseEntity.created(URI.create("/api/clients/" + saved.getId())).body(saved);
     }
 

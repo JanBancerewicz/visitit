@@ -24,3 +24,5 @@ curl.exe -i http://localhost:8080/api/clients
 curl.exe -i http://localhost:8080/api/reservations
 
 mvn -q -f category-service/pom.xml spring-boot:run
+mvn -q -f elements-service/pom.xml spring-boot:run
+mvn -q -f api-gateway/pom.xml spring-boot:run

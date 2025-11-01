@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.*; import java.util.stream.Collectors; import java.util.UUID;
 
 @Service @RequiredArgsConstructor
@@ -18,10 +19,13 @@ public class ReservationService {
     private final ServiceRefRepository serviceRepo;
     private final RoomRefRepository roomRepo;
 
+    @Transactional(readOnly = true)
     public List<ReservationListDTO> list(){
-        return reservationRepo.findAll().stream().map(this::toListDTO).collect(Collectors.toList());
+        return reservationRepo.findAllFetched()
+                .stream().map(this::toListDTO).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Optional<ReservationDTO> get(UUID id){
         return reservationRepo.findById(id).map(this::toDTO);
     }
@@ -63,18 +67,28 @@ public class ReservationService {
         return reservationRepo.findById(id).map(r->{ reservationRepo.delete(r); return true; }).orElse(false);
     }
 
+    @Transactional(readOnly = true)
     public List<ReservationListDTO> byStatus(String status){
         return reservationRepo.findByStatus(status).stream().map(this::toListDTO).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
     public List<ReservationListDTO> byClient(UUID clientId){
         return reservationRepo.findByClient_Id(clientId).stream().map(this::toListDTO).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
     public List<ReservationListDTO> byEmployee(UUID employeeId){
         return reservationRepo.findByEmployee_Id(employeeId).stream().map(this::toListDTO).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
     public List<ReservationListDTO> byService(UUID serviceId){
-        return reservationRepo.findByService_Id(serviceId).stream().map(this::toListDTO).collect(Collectors.toList());
+        return reservationRepo.findAllByServiceFetched(serviceId)
+                .stream().map(this::toListDTO).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
     public List<ReservationListDTO> byRoom(UUID roomId){
         return reservationRepo.findByRoom_Id(roomId).stream().map(this::toListDTO).collect(Collectors.toList());
     }

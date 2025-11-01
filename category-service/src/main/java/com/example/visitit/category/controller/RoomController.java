@@ -2,6 +2,7 @@ package com.example.visitit.category.controller;
 
 import com.example.visitit.category.model.Room;
 import com.example.visitit.category.service.RoomService;
+import com.example.visitit.category.sync.SyncPublisher;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -15,6 +16,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class RoomController {
     private final RoomService service;
+    private final SyncPublisher sync;
 
     @GetMapping public List<Room> list(){ return service.findAll(); }
 
@@ -26,6 +28,7 @@ public class RoomController {
     @PostMapping
     public ResponseEntity<Room> create(@Valid @RequestBody Room body){
         Room saved = service.create(body);
+        sync.pushRoom(saved.getId(), saved.getName());
         return ResponseEntity.created(URI.create("/api/rooms/" + saved.getId())).body(saved);
     }
 
