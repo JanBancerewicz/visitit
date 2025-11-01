@@ -2,6 +2,7 @@ package com.example.visitit.category.controller;
 
 import com.example.visitit.category.model.Employee;
 import com.example.visitit.category.service.EmployeeService;
+import com.example.visitit.category.sync.SyncPublisher;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -15,6 +16,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class EmployeeController {
     private final EmployeeService service;
+    private final SyncPublisher sync;
 
     @GetMapping public List<Employee> list(){ return service.findAll(); }
 
@@ -26,6 +28,7 @@ public class EmployeeController {
     @PostMapping
     public ResponseEntity<Employee> create(@Valid @RequestBody Employee body){
         Employee saved = service.create(body);
+        sync.pushEmployee(saved.getId(), saved.getFirstName() + " " + saved.getLastName());
         return ResponseEntity.created(URI.create("/api/employees/" + saved.getId())).body(saved);
     }
 
