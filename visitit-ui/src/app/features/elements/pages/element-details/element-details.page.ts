@@ -29,6 +29,7 @@ export class ElementDetailsPage implements OnInit {
   ngOnInit(): void {
     this.serviceId = String(this.route.snapshot.paramMap.get('catId') ?? '');
     this.reservationId = String(this.route.snapshot.paramMap.get('elId') ?? '');
-    this.api.get(this.serviceId, this.reservationId).subscribe(r => this.reservation = r);
+    this.api.get(this.reservationId).subscribe(r => this.reservation = r);
+
   }
 }

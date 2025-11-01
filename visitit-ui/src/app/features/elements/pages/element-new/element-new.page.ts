@@ -1,72 +1,130 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ElementService } from '../../../../core/services/element.service';
+import { ElementService, ReservationCreate } from '../../../../core/services/element.service';
+import { ClientService } from '../../../../core/services/client.service';
+import { EmployeeService } from '../../../../core/services/employee.service';
+import { RoomService } from '../../../../core/services/room.service';
+import { Client } from '../../../../shared/models/client';
+import { Employee } from '../../../../shared/models/employee';
+import { Room } from '../../../../shared/models/room';
 
 @Component({
   selector: 'app-element-new',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <h2>Nowa rezerwacja</h2>
-    <form [formGroup]="form" (ngSubmit)="save()">
-      <label>Client ID</label>
-      <input formControlName="clientId" />
+    <div class="row">
+      <a [routerLink]="['/categories', serviceId]">← Wróć</a>
+      <span class="spacer"></span>
+      <h3 style="margin:0">Nowa rezerwacja</h3>
+    </div>
 
-      <label>Employee ID</label>
-      <input formControlName="employeeId" />
+    <form class="card" [formGroup]="form" (ngSubmit)="save()">
+      <label>Klient
+        <select formControlName="clientId" required>
+          <option value="" disabled>— wybierz —</option>
+          <option *ngFor="let c of clients" [value]="c.id">
+            {{ c.firstName }} {{ c.lastName }} ({{ c.email }})
+          </option>
+        </select>
+      </label>
 
-      <label>Room ID</label>
-      <input formControlName="roomId" />
+      <label>Pracownik
+        <select formControlName="employeeId" required>
+          <option value="" disabled>— wybierz —</option>
+          <option *ngFor="let e of employees" [value]="e.id">
+            {{ e.firstName }} {{ e.lastName }} — {{ e.role || '—' }}
+          </option>
+        </select>
+      </label>
 
-      <label>Start</label>
-      <input type="datetime-local" formControlName="startDatetime" />
+      <label>Pokój
+        <select formControlName="roomId" required>
+          <option value="" disabled>— wybierz —</option>
+          <option *ngFor="let r of rooms" [value]="r.id">{{ r.name }}</option>
+        </select>
+      </label>
 
-      <label>End</label>
-      <input type="datetime-local" formControlName="endDatetime" />
+      <label>Start
+        <input type="datetime-local" formControlName="startDatetime" required>
+      </label>
 
-      <label>Status</label>
-      <input formControlName="status" placeholder="np. PLANNED" />
+      <label>Koniec
+        <input type="datetime-local" formControlName="endDatetime" required>
+      </label>
 
-      <label>Notatka</label>
-      <input formControlName="note" />
+      <label>Status
+        <select formControlName="status" required>
+          <option value="PLANNED">PLANNED</option>
+          <option value="CONFIRMED">CONFIRMED</option>
+          <option value="DONE">DONE</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+      </label>
+
+      <label>Notatka
+        <textarea formControlName="note" rows="3" placeholder="opcjonalnie"></textarea>
+      </label>
 
       <div class="row">
         <button type="submit" class="primary" [disabled]="form.invalid">Zapisz</button>
-        <button type="button" (click)="cancel()">Anuluj</button>
       </div>
     </form>
   `
 })
 export class ElementNewPage implements OnInit {
-  private readonly fb = inject(FormBuilder);
-  private readonly api = inject(ElementService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private api = inject(ElementService);
+  private clientsApi = inject(ClientService);
+  private employeesApi = inject(EmployeeService);
+  private roomsApi = inject(RoomService);
+
+  serviceId = '';
+  clients: Client[] = [];
+  employees: Employee[] = [];
+  rooms: Room[] = [];
 
   form = this.fb.nonNullable.group({
     clientId: ['', Validators.required],
     employeeId: ['', Validators.required],
     roomId: ['', Validators.required],
-    startDatetime: ['', Validators.required],
-    endDatetime: ['', Validators.required],
+    startDatetime: ['', Validators.required], // HTML daje "yyyy-MM-ddTHH:mm"
+    endDatetime:   ['', Validators.required],
     status: ['PLANNED', Validators.required],
-    note: [''],
+    note: ['']
   });
-
-  private serviceId = '';
 
   ngOnInit(): void {
     this.serviceId = String(this.route.snapshot.paramMap.get('catId') ?? '');
+    // załaduj opcje
+    this.clientsApi.list().subscribe(x => this.clients = x);
+    this.employeesApi.list().subscribe(x => this.employees = x);
+    this.roomsApi.list().subscribe(x => this.rooms = x);
+  }
+
+  private toIsoSeconds(x: string): string {
+    // z "yyyy-MM-ddTHH:mm" → "yyyy-MM-ddTHH:mm:00"
+    return x && x.length === 16 ? `${x}:00` : x;
   }
 
   save(): void {
-    const dto = { ...this.form.getRawValue(), serviceId: this.serviceId };
-    this.api.createReservation(dto).subscribe({
-      next: () => this.router.navigate(['/categories', this.serviceId]),
-      error: () => alert('Błąd tworzenia rezerwacji.')
-    });
+    const v = this.form.getRawValue();
+    const dto: ReservationCreate = {
+      clientId: v.clientId,
+      employeeId: v.employeeId,
+      roomId: v.roomId,
+      serviceId: this.serviceId,
+      startDatetime: this.toIsoSeconds(v.startDatetime),
+      endDatetime: this.toIsoSeconds(v.endDatetime),
+      status: v.status,
+      note: v.note || ''
+    };
+    this.api.create(dto).subscribe(() =>
+      this.router.navigate(['/categories', this.serviceId])
+    );
   }
-  cancel(): void { this.router.navigate(['/categories', this.serviceId]); }
 }
