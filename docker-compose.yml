@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  web:
+    image: nginx:1.27-alpine
+    container_name: visitit-web
+    environment:
+      CATEGORY_BASE_URL: http://category-service:8080
+      ELEMENTS_BASE_URL: http://elements-service:8080
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - ./visitit-ui/dist/visitit-ui/browser:/usr/share/nginx/html:ro
+      - ./visitit-ui/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      category-service:
+        condition: service_started
+      elements-service:
+        condition: service_started
+    restart: unless-stopped
+
+  category-service:
+    build:
+      context: .
+      dockerfile: category-service/Dockerfile
+    image: visitit-category:local
+    container_name: visitit-category
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://category-db:5432/${CATEGORY_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${CATEGORY_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${CATEGORY_DB_PASS}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SERVER_PORT: "8080"
+      ELEMENTS_BASE_URL: http://elements-service:8080
+    ports:
+      - "${CATEGORY_PORT:-8081}:8080"
+    depends_on:
+      category-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  category-db:
+    image: postgres:16-alpine
+    container_name: visitit-category-db
+    environment:
+      POSTGRES_DB: ${CATEGORY_DB_NAME}
+      POSTGRES_USER: ${CATEGORY_DB_USER}
+      POSTGRES_PASSWORD: ${CATEGORY_DB_PASS}
+    volumes:
+      - category_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${CATEGORY_DB_USER} -d ${CATEGORY_DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  elements-service:
+    build:
+      context: .
+      dockerfile: elements-service/Dockerfile
+    image: visitit-elements:local
+    container_name: visitit-elements
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://elements-db:5432/${ELEMENTS_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${ELEMENTS_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ELEMENTS_DB_PASS}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SERVER_PORT: "8080"
+    ports:
+      - "${ELEMENTS_PORT:-8082}:8080"
+    depends_on:
+      elements-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  elements-db:
+    image: postgres:16-alpine
+    container_name: visitit-elements-db
+    environment:
+      POSTGRES_DB: ${ELEMENTS_DB_NAME}
+      POSTGRES_USER: ${ELEMENTS_DB_USER}
+      POSTGRES_PASSWORD: ${ELEMENTS_DB_PASS}
+    volumes:
+      - elements_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${ELEMENTS_DB_USER} -d ${ELEMENTS_DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  category_pgdata:
+  elements_pgdata:

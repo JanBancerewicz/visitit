@@ -26,3 +26,60 @@ curl.exe -i http://localhost:8080/api/reservations
 mvn -q -f category-service/pom.xml spring-boot:run
 mvn -q -f elements-service/pom.xml spring-boot:run
 mvn -q -f api-gateway/pom.xml spring-boot:run
+
+
+
+### DOCKER
+
+## docker compose build --no-cache
+
+docker compose up -d
+
+#####################
+
+
+$base = 'http://localhost:8081/api/services'
+
+# 1) sprawdź, co istnieje
+Invoke-RestMethod -Uri $base -Method Get
+
+# 2) weź usługę "Test" albo utwórz, jeśli jej nie ma
+$svc = (Invoke-RestMethod -Method Get -Uri $base) |
+       Where-Object { $_.name -eq 'Test' } |
+       Select-Object -First 1
+
+if (-not $svc) {
+  $svc = Invoke-RestMethod -Method Post `
+    -Uri $base `
+    -ContentType 'application/json' `
+    -Body '{"name":"Test","description":"X","durationMin":30,"price":10.0}'
+}
+
+# 3) zawsze jeden, czysty GUID
+$id = ($svc.id | Select-Object -First 1).ToString().Trim()
+
+# 4) GET po ID (kontrola)
+Invoke-RestMethod -Method Get -Uri "$base/$id"
+
+# 5) UPDATE
+$updateBody = '{"name":"Test 2","description":"Y","durationMin":45,"price":19.99}'
+Invoke-RestMethod -Method Put -Uri "$base/$id" -ContentType 'application/json' -Body $updateBody
+
+# 6) DELETE (opcjonalnie)
+# Invoke-RestMethod -Method Delete -Uri "$base/$id"
+
+
+######################## 404:
+
+$base='http://localhost:8081/api/services'
+$svc = (Invoke-RestMethod $base) | Where-Object { $_.name -eq 'Test 2' } | Select-Object -First 1
+$id = $svc.id
+Invoke-RestMethod -Method Delete -Uri "$base/$id"
+# weryfikacja:
+Invoke-RestMethod -Method Get -Uri "$base/$id"  # oczekiwane 404
+
+
+# spróbuj dwa razy ten sam POST
+$body='{"name":"Duplikat","description":"X","durationMin":30,"price":10.0}'
+Invoke-RestMethod -Method Post -Uri $base -ContentType 'application/json' -Body $body
+Invoke-RestMethod -Method Post -Uri $base -ContentType 'application/json' -Body $body  # oczekiwane 409
