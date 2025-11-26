@@ -1,0 +1,26 @@
+server {
+  listen 80;
+  server_name _;
+
+  location / {
+    root /usr/share/nginx/html;
+    try_files $uri /index.html;
+  }
+# services -> category
+location = /api/services     { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+location ^~ /api/services/   { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+
+# rooms/clients/employees -> category  (ZMIANA: było elements)
+location = /api/rooms        { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+location ^~ /api/rooms/      { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+
+location = /api/clients      { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+location ^~ /api/clients/    { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+
+location = /api/employees    { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+location ^~ /api/employees/  { proxy_pass http://category-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+
+# reservations -> elements
+location = /api/reservations     { proxy_pass http://elements-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+location ^~ /api/reservations/   { proxy_pass http://elements-service:8080; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+}

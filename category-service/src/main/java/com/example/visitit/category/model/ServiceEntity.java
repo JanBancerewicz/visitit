@@ -13,7 +13,10 @@ import java.util.UUID;
 @Table(name = "service", uniqueConstraints = @UniqueConstraint(name = "uk_service_name", columnNames = "name"))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ServiceEntity {
-    @Id private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @NotBlank @Column(nullable = false, unique = true) private String name;
     private String description;

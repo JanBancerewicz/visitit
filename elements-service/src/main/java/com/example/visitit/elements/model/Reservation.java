@@ -3,11 +3,24 @@ package com.example.visitit.elements.model;
 import com.example.visitit.elements.model.ref.*;
 import jakarta.persistence.*; import lombok.*;
 import java.time.LocalDateTime; import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 @Entity @Table(name="reservation")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Reservation {
-    @Id private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
+//    @Id
+//    @GeneratedValue
+//    @JsonProperty(access = READ_ONLY)   // id tylko do odczytu w JSON
+//    private UUID id;
+
+    @Version
+    @JsonProperty(access = READ_ONLY)   // version tylko do odczytu
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name="client_id", nullable=false)
     private ClientRef client;

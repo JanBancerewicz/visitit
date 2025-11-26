@@ -3,39 +3,69 @@ package com.example.visitit.category.service;
 import com.example.visitit.category.model.ServiceEntity;
 import com.example.visitit.category.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
+@Transactional
 public class ServiceService {
+
     private final ServiceRepository repo;
 
-    public List<ServiceEntity> findAll(){ return repo.findAll(); }
-    public Optional<ServiceEntity> findById(UUID id){ return repo.findById(id); }
-
-    @Transactional
-    public ServiceEntity create(ServiceEntity in){
-        if(in.getId()==null) in.setId(UUID.randomUUID());
-        if(repo.existsByName(in.getName())) throw new IllegalStateException("NAME_CONFLICT");
-        return repo.save(in);
+    @Transactional(readOnly = true)
+    public List<ServiceEntity> findAll() {
+        return repo.findAll();
     }
 
-    @Transactional
-    public Optional<ServiceEntity> update(UUID id, ServiceEntity in){
-        return repo.findById(id).map(ex -> {
-            if(repo.existsByNameAndIdNot(in.getName(), id)) throw new IllegalStateException("NAME_CONFLICT");
-            ex.setName(in.getName());
-            ex.setDescription(in.getDescription());
-            ex.setDurationMin(in.getDurationMin());
-            ex.setPrice(in.getPrice());
-            return repo.save(ex);
-        });
+    @Transactional(readOnly = true)
+    public ServiceEntity get(UUID id) {
+        return repo.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
     }
 
-    @Transactional
-    public boolean delete(UUID id){
-        return repo.findById(id).map(e->{ repo.delete(e); return true; }).orElse(false);
+    public ServiceEntity create(ServiceEntity body) {
+        // KLUCZOWE: wymuś persist zamiast merge (fix 500)
+        body.setId(null);
+
+        if (body.getName() == null || body.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        }
+        if (repo.existsByNameIgnoreCase(body.getName())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "name must be unique");
+        }
+        return repo.save(body);
+    }
+
+    public ServiceEntity update(UUID id, ServiceEntity body) {
+        var entity = repo.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
+
+        var newName = body.getName();
+        if (newName == null || newName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        }
+        if (repo.existsByNameIgnoreCaseAndIdNot(newName, id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "name must be unique");
+        }
+
+        entity.setName(newName);
+        entity.setDescription(body.getDescription());
+        entity.setDurationMin(body.getDurationMin());
+        entity.setPrice(body.getPrice());
+
+        return repo.save(entity);
+    }
+
+    public void delete(UUID id) {
+        if (!repo.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found");
+        }
+        repo.deleteById(id);
     }
 }

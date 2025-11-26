@@ -11,7 +11,10 @@ import java.util.UUID;
 @Table(name = "client", uniqueConstraints = @UniqueConstraint(name = "uk_client_email", columnNames = "email"))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Client {
-    @Id private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @NotBlank @Column(nullable = false) private String firstName;
     @NotBlank @Column(nullable = false) private String lastName;

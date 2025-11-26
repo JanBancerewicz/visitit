@@ -10,7 +10,10 @@ import java.util.UUID;
 @Table(name = "room", uniqueConstraints = @UniqueConstraint(name = "uk_room_name", columnNames = "name"))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Room {
-    @Id private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @NotBlank @Column(nullable = false, unique = true) private String name;
 }

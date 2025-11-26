@@ -8,7 +8,10 @@ import java.math.BigDecimal; import java.time.LocalDateTime; import java.util.UU
         uniqueConstraints = @UniqueConstraint(name="uk_payment_reservation", columnNames="reservation_id"))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Payment {
-    @Id private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY) @JoinColumn(name="reservation_id", nullable=false)
     private Reservation reservation;
