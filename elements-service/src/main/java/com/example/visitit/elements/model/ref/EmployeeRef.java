@@ -1,13 +1,23 @@
 package com.example.visitit.elements.model.ref;
 
-import jakarta.persistence.*; import lombok.*; import java.util.UUID;
+import jakarta.persistence.*;
+import lombok.*;
 
-@Entity @Table(name="employee_ref")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+import java.util.UUID;
+
+@Entity
+@Table(name = "employee_ref")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class EmployeeRef {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false)
-    private UUID id;
-    @Column(nullable=false) private String displayName;
+    private UUID id;              // ID z category-service, bez @GeneratedValue
+
+    @Column(nullable = false)
+    private String displayName;
 }

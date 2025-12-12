@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,4 +44,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<UUID> findIdsByServiceId(@Param("id") UUID id);
     @Query("select r.id from Reservation r where r.room.id = :id")
     List<UUID> findIdsByRoomId(@Param("id") UUID id);
+
+    // --- nowa metoda sprawdzająca czy istnieje rezerwacja w tym pokoju, która nakłada się na podany przedział
+    @Query("""
+           select case when count(r) > 0 then true else false end
+           from Reservation r
+           where r.room.id = :roomId
+             and r.startDatetime < :end
+             and r.endDatetime   > :start
+           """)
+    boolean existsOverlapForRoom(@Param("roomId") UUID roomId,
+                                 @Param("start") LocalDateTime start,
+                                 @Param("end") LocalDateTime end);
 }

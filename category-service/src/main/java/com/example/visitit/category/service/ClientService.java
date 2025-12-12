@@ -6,36 +6,59 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class ClientService {
+
     private final ClientRepository repo;
 
-    public List<Client> findAll(){ return repo.findAll(); }
-    public Optional<Client> findById(UUID id){ return repo.findById(id); }
+    public List<Client> findAll() {
+        return repo.findAll();
+    }
+
+    public Optional<Client> findById(UUID id) {
+        return repo.findById(id);
+    }
 
     @Transactional
-    public Client create(Client in){
-        if(in.getId()==null) in.setId(UUID.randomUUID());
-        if(repo.existsByEmail(in.getEmail())) throw new IllegalStateException("EMAIL_CONFLICT");
+    public Client create(Client in) {
+        // wymuś INSERT – ID ma wygenerować JPA (@GeneratedValue)
+        in.setId(null);
+
+        if (repo.existsByEmail(in.getEmail())) {
+            throw new IllegalStateException("EMAIL_CONFLICT");
+        }
+
         return repo.save(in);
     }
 
     @Transactional
-    public Optional<Client> update(UUID id, Client in){
-        return repo.findById(id).map(ex -> {
-            if(repo.existsByEmailAndIdNot(in.getEmail(), id)) throw new IllegalStateException("EMAIL_CONFLICT");
-            ex.setFirstName(in.getFirstName());
-            ex.setLastName(in.getLastName());
-            ex.setEmail(in.getEmail());
-            ex.setPhone(in.getPhone());
-            return repo.save(ex);
+    public Optional<Client> update(UUID id, Client in) {
+        return repo.findById(id).map(existing -> {
+            if (repo.existsByEmailAndIdNot(in.getEmail(), id)) {
+                throw new IllegalStateException("EMAIL_CONFLICT");
+            }
+
+            existing.setFirstName(in.getFirstName());
+            existing.setLastName(in.getLastName());
+            existing.setEmail(in.getEmail());
+            existing.setPhone(in.getPhone());
+
+            return repo.save(existing);
         });
     }
 
     @Transactional
-    public boolean delete(UUID id){
-        return repo.findById(id).map(e->{ repo.delete(e); return true; }).orElse(false);
+    public boolean delete(UUID id) {
+        return repo.findById(id)
+                .map(entity -> {
+                    repo.delete(entity);
+                    return true;
+                })
+                .orElse(false);
     }
 }
