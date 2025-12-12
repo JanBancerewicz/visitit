@@ -5,13 +5,19 @@ import com.example.visitit.elements.model.*;
 import com.example.visitit.elements.model.ref.*;
 import com.example.visitit.elements.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.UUID;
 
-import java.util.*; import java.util.stream.Collectors; import java.util.UUID;
-
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class ReservationService {
     private final ReservationRepository reservationRepo;
     private final ClientRefRepository clientRepo;
@@ -38,14 +44,33 @@ public class ReservationService {
         var room     = roomRepo.findById(dto.getRoomId()).orElse(null);
         if (client==null || employee==null || service==null || room==null) return Optional.empty();
 
+        // walidacja czasu
+        LocalDateTime start = dto.getStartDatetime();
+        LocalDateTime end   = dto.getEndDatetime();
+        if (start == null || end == null || !start.isBefore(end)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid time range");
+        }
+
+        // sprawdź kolizję w tym samym pokoju
+        boolean overlap = reservationRepo.existsOverlapForRoom(room.getId(), start, end);
+        if (overlap) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "time slot already booked");
+        }
+
         var r = Reservation.builder()
-                .id(UUID.randomUUID())
+                .id(null) // <- pozwól JPA wygenerować UUID
                 .client(client).employee(employee).service(service).room(room)
-                .startDatetime(dto.getStartDatetime()).endDatetime(dto.getEndDatetime())
+                .startDatetime(start).endDatetime(end)
                 .status(dto.getStatus()).note(dto.getNote())
                 .build();
 
-        return Optional.of(toDTO(reservationRepo.save(r)));
+        try {
+            var saved = reservationRepo.save(r);
+            return Optional.of(toDTO(saved));
+        } catch (DataIntegrityViolationException ex) {
+            // mapuj naruszenia constraints na 409 z użytecznym message
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "database constraint: " + ex.getMostSpecificCause().getMessage(), ex);
+        }
     }
 
     @Transactional
@@ -59,6 +84,9 @@ public class ReservationService {
             if (dto.getEndDatetime()!=null)   ex.setEndDatetime(dto.getEndDatetime());
             if (dto.getStatus()!=null)        ex.setStatus(dto.getStatus());
             if (dto.getNote()!=null)          ex.setNote(dto.getNote());
+            // opcjonalnie: przy update też warto sprawdzić overlap (z pominięciem aktualnego id)
+            // TODO: optionally add overlap check for updates
+
             return toDTO(reservationRepo.save(ex));
         });
     }

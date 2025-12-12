@@ -24,37 +24,39 @@ public class ServiceService {
     }
 
     @Transactional(readOnly = true)
+    public ServiceEntity findById(UUID id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
+    }
+
+    // kompatybilna metoda oczekiwana przez ServiceController.get(...)
+    @Transactional(readOnly = true)
     public ServiceEntity get(UUID id) {
-        return repo.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
+        return findById(id);
     }
 
     public ServiceEntity create(ServiceEntity body) {
-        // KLUCZOWE: wymuś persist zamiast merge (fix 500)
         body.setId(null);
 
-        if (body.getName() == null || body.getName().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
-        }
+        validate(body);
+
         if (repo.existsByNameIgnoreCase(body.getName())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "name must be unique");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Service with this name already exists");
         }
+
         return repo.save(body);
     }
 
     public ServiceEntity update(UUID id, ServiceEntity body) {
-        var entity = repo.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
+        ServiceEntity entity = findById(id);
 
-        var newName = body.getName();
-        if (newName == null || newName.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
-        }
-        if (repo.existsByNameIgnoreCaseAndIdNot(newName, id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "name must be unique");
+        validate(body);
+
+        if (repo.existsByNameIgnoreCaseAndIdNot(body.getName(), id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Service with this name already exists");
         }
 
-        entity.setName(newName);
+        entity.setName(body.getName());
         entity.setDescription(body.getDescription());
         entity.setDurationMin(body.getDurationMin());
         entity.setPrice(body.getPrice());
@@ -67,5 +69,17 @@ public class ServiceService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found");
         }
         repo.deleteById(id);
+    }
+
+    private void validate(ServiceEntity body) {
+        if (body.getName() == null || body.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        }
+        if (body.getDurationMin() == null || body.getDurationMin() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "durationMin must be positive");
+        }
+        if (body.getPrice() == null || body.getPrice().signum() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price must be non-negative");
+        }
     }
 }
