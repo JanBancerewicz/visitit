@@ -83,3 +83,7 @@ Invoke-RestMethod -Method Get -Uri "$base/$id"  # oczekiwane 404
 $body='{"name":"Duplikat","description":"X","durationMin":30,"price":10.0}'
 Invoke-RestMethod -Method Post -Uri $base -ContentType 'application/json' -Body $body
 Invoke-RestMethod -Method Post -Uri $base -ContentType 'application/json' -Body $body  # oczekiwane 409
+
+########################
+
+docker compose up --build

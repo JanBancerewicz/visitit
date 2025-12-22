@@ -21,7 +21,6 @@ spring:
           predicates:
             - Path=/api/services/**, /api/clients/**, /api/employees/**, /api/rooms/**
 
-
 eureka:
   client:
     serviceUrl:
@@ -30,4 +29,3 @@ eureka:
 logging:
   level:
     org.springframework.cloud.gateway: TRACE
-    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
