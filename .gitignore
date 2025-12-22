@@ -39,3 +39,7 @@ build/
 *.ser
 
 visitit-spring.png
+
+package-lock.json
+visitit-ui/package-lock.json
+visitit-ui/public/favicon.ico
