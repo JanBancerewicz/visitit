@@ -6,25 +6,28 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            # reservations (elements-service)
-            - id: elements
-              uri: http://localhost:8082
-              predicates:
-                - Path=/api/reservations/**
-            # internal sync (elements-service)
-            - id: elements-internal-sync
-              uri: http://localhost:8082
-              predicates:
-                - Path=/internal-sync/categories/**
-            # services/clients/employees/rooms (category-service)
-            - id: category
-              uri: http://localhost:8081
-              predicates:
-                - Path=/api/services/**,/api/clients/**,/api/employees/**,/api/rooms/**
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: elements-service-route
+          uri: lb://elements-service
+          predicates:
+            - Path=/api/reservations/**, /api/payments/**, /internal-sync/categories/**
+
+        - id: category-service-route
+          uri: lb://category-service
+          predicates:
+            - Path=/api/services/**, /api/clients/**, /api/employees/**, /api/rooms/**
+
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery-service:8761/eureka/
 
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
