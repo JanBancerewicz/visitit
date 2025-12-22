@@ -6,25 +6,30 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            # reservations (elements-service)
-            - id: elements
-              uri: http://localhost:8082
-              predicates:
-                - Path=/api/reservations/**
-            # internal sync (elements-service)
-            - id: elements-internal-sync
-              uri: http://localhost:8082
-              predicates:
-                - Path=/internal-sync/categories/**
-            # services/clients/employees/rooms (category-service)
-            - id: category
-              uri: http://localhost:8081
-              predicates:
-                - Path=/api/services/**,/api/clients/**,/api/employees/**,/api/rooms/**
+      # Automatyczne wykrywanie serwisów z Eureki
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # Przekierowanie dla elements-service (np. rezerwacje)
+        - id: elements-service-route
+          uri: lb://elements-service
+          predicates:
+            - Path=/api/reservations/**, /internal-sync/categories/**
+
+        # Przekierowanie dla category-service
+        - id: category-service-route
+          uri: lb://category-service
+          predicates:
+            - Path=/api/services/**, /api/clients/**, /api/employees/**, /api/rooms/**
+
+# Konfiguracja klienta Eureka, aby Gateway widział inne serwisy
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
 
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway: TRACE # Zmienione na TRACE, abyś widział w logach load balancing

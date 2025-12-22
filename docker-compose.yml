@@ -1,44 +1,66 @@
 version: "3.9"
 
 services:
+  # Serwer Discovery (Eureka) - Punkt 1 instrukcji
+  discovery-service:
+    build:
+      context: .
+      dockerfile: discovery-service/Dockerfile
+    container_name: visitit-discovery
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+
+  # API Gateway - Punkt 2 instrukcji [cite: 35, 42]
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: visitit-gateway
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-service
+    restart: unless-stopped
+
+  # Angular Application - Komunikuje się przez Gateway [cite: 42]
   web:
     image: nginx:1.27-alpine
     container_name: visitit-web
     environment:
-      CATEGORY_BASE_URL: http://category-service:8080
-      ELEMENTS_BASE_URL: http://elements-service:8080
+      CATEGORY_BASE_URL: http://api-gateway:8080
+      ELEMENTS_BASE_URL: http://api-gateway:8080
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-80}:80"
     volumes:
       - ./visitit-ui/dist/visitit-ui/browser:/usr/share/nginx/html:ro
       - ./visitit-ui/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
-      category-service:
-        condition: service_started
-      elements-service:
-        condition: service_started
+      - api-gateway
     restart: unless-stopped
 
+  # Serwis Kategorii
   category-service:
     build:
       context: .
       dockerfile: category-service/Dockerfile
-    image: visitit-category:local
     container_name: visitit-category
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://category-db:5432/${CATEGORY_DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${CATEGORY_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${CATEGORY_DB_PASS}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SERVER_PORT: "8080"
-      ELEMENTS_BASE_URL: http://elements-service:8080
-    ports:
-      - "${CATEGORY_PORT:-8081}:8080"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
     depends_on:
       category-db:
         condition: service_healthy
+      discovery-service:
+        condition: service_started
     restart: unless-stopped
 
+  # Baza danych dla kategorii z wolumenem
   category-db:
     image: postgres:16-alpine
     container_name: visitit-category-db
@@ -55,25 +77,45 @@ services:
       retries: 20
     restart: unless-stopped
 
-  elements-service:
+  # Instancja 1 serwisu elementów
+  elements-service-1:
     build:
       context: .
       dockerfile: elements-service/Dockerfile
-    image: visitit-elements:local
-    container_name: visitit-elements
+    container_name: visitit-elements-1
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://elements-db:5432/${ELEMENTS_DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${ELEMENTS_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${ELEMENTS_DB_PASS}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SERVER_PORT: "8080"
-    ports:
-      - "${ELEMENTS_PORT:-8082}:8080"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
     depends_on:
       elements-db:
         condition: service_healthy
+      discovery-service:
+        condition: service_started
     restart: unless-stopped
 
+  # Instancja 2 serwisu elementów
+  elements-service-2:
+    build:
+      context: .
+      dockerfile: elements-service/Dockerfile
+    container_name: visitit-elements-2
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://elements-db:5432/${ELEMENTS_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${ELEMENTS_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ELEMENTS_DB_PASS}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      elements-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # Wspólna baza danych dla instancji elementów
   elements-db:
     image: postgres:16-alpine
     container_name: visitit-elements-db
@@ -90,6 +132,7 @@ services:
       retries: 20
     restart: unless-stopped
 
+# Definicja wolumenów dla trwałości danych
 volumes:
   category_pgdata:
   elements_pgdata:
