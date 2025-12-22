@@ -6,30 +6,28 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      # Automatyczne wykrywanie serwisów z Eureki
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
       routes:
-        # Przekierowanie dla elements-service (np. rezerwacje)
         - id: elements-service-route
           uri: lb://elements-service
           predicates:
-            - Path=/api/reservations/**, /internal-sync/categories/**
+            - Path=/api/reservations/**, /api/payments/**, /internal-sync/categories/**
 
-        # Przekierowanie dla category-service
         - id: category-service-route
           uri: lb://category-service
           predicates:
             - Path=/api/services/**, /api/clients/**, /api/employees/**, /api/rooms/**
 
-# Konfiguracja klienta Eureka, aby Gateway widział inne serwisy
+
 eureka:
   client:
-    service-url:
+    serviceUrl:
       defaultZone: http://discovery-service:8761/eureka/
 
 logging:
   level:
-    org.springframework.cloud.gateway: TRACE # Zmienione na TRACE, abyś widział w logach load balancing
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
